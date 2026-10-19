@@ -1,0 +1,29 @@
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: data
+      # Схема и валидатор — в коде skriptes (backend/internal/bio); проверяем тем же biogen, что пакует датасет в образ.
+      - uses: actions/checkout@v4
+        with:
+          repository: alshstf/skriptes
+          path: skriptes
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache-dependency-path: skriptes/backend/go.sum
+      - name: biogen check
+        working-directory: skriptes/backend
+        run: go run ./cmd/biogen check -dir "$GITHUB_WORKSPACE/data"
+      - name: biogen pack
+        working-directory: skriptes/backend
+        run: go run ./cmd/biogen pack -dir "$GITHUB_WORKSPACE/data" -out "$RUNNER_TEMP/bio.pack.gz"
